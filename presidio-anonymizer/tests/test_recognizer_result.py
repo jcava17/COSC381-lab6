@@ -288,3 +288,25 @@ def test_given_negative_start_or_endpoint_then_we_fail(start, end):
 def create_recognizer_result(entity_type: str, score: float, start: int, end: int):
     data = {"entity_type": entity_type, "score": score, "start": start, "end": end}
     return RecognizerResult.from_json(data)
+import pytest
+@pytest.mark.parametrize(
+    "a_start,a_end,b_start,b_end,expected",
+    [
+        (0, 5, 6, 10, 0),   # no overlap
+        (6, 10, 0, 5, 0),   # no overlap
+        (0, 5, 5, 10, 0),   # exact-touch
+        (5, 10, 0, 5, 0),   # exact-touch
+        (0, 10, 5, 12, 5),  # partial
+        (0, 11, 5, 12, 6),  # partial
+        (2, 8, 0, 10, 6),   # partial
+        (0, 10, 2, 8, 6),   # partial
+        (0, 10, 0, 10, 10), # identical/full
+        (0, 10, 3, 7, 4),   # containment
+        (3, 7, 0, 10, 4),   # containment
+    ],
+)
+def test_intersects(a_start, a_end, b_start, b_end, expected):
+    first = create_recognizer_result("entity", 0.9, a_start, a_end)
+    second = create_recognizer_result("entity", 0.9, b_start, b_end)
+    assert first.intersects(second) == expected
+    assert second.intersects(first) == expected
